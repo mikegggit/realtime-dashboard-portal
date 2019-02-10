@@ -1,0 +1,21 @@
+# __BASE________________________________
+#FROM registry.git.nasdaq.com/options/mon-ng/gradle:latest AS base
+FROM registry.git.nasdaq.com/inet/build-container/gradle:latest AS base
+
+COPY . .
+
+# __BUILD_______________________________________
+FROM base AS buildui
+
+# __DEPENDENCIES________________________________
+FROM base AS dependencies
+
+RUN yum -y install epel-release && \
+  yum -y install nc && \
+  yum -d 0 -e 0 -y install net-tools && \
+  yum clean all
+
+
+# __DEBUG________________________________
+FROM dependencies AS debug
+

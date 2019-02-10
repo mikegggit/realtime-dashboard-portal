@@ -1,0 +1,22 @@
+version: '@application.version@'
+
+thresholds:
+  nsdq: 
+    - minutesPastOpen: 10
+      warningThreshold: 10
+      criticalThreshold: 100
+
+    - minutesPastOpen: 30
+      warningThreshold: 1
+      criticalThreshold: 10
+   
+  cboe: 
+    - minutesPastOpen: 10
+      warningThreshold: 15
+      criticalThreshold: 150
+
+    - minutesPastOpen: 30
+      warningThreshold: 1
+      criticalThreshold: 10
+   
+    

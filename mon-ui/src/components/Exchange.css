@@ -1,0 +1,33 @@
+.normal {
+  max-width: 250px;
+  min-height: 120px;
+  background-color: mediumseagreen;
+  flex: 1 1 auto;
+  margin: 2px 1px;
+}
+
+.critical {
+  max-width: 250px;
+  min-height: 120px;
+  max-height: 150px;
+  background-color: red;
+  flex: 1 1 auto;
+  margin: 2px 1px;
+}
+
+.preopen{
+  max-width: 250px;
+  min-height: 120px;
+  background-color: gray;
+  flex: 1 1 auto;
+  margin: 2px 1px;
+}
+
+.summaryStatsRow p {
+  color: white; 
+  line-height: calc(1.2 * var(--unit));
+  white-space: pre; 
+  font-family: 'Inconsolata';
+  font-size: 15px;
+  font-weight: bold
+}

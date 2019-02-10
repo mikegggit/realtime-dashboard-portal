@@ -1,0 +1,39 @@
+version: '3.2'
+services: 
+  monmt:
+    build:
+      context: mon-mt/docker
+      dockerfile: mon-mt/Dockerfile
+      args:
+        MON_VERSION: 0.0.1
+#    image: poc/mon-app:latest
+    image: localhost:5000/options/mon-ng/mon-mt:latest
+    ports:
+      - "8080:8080"
+    environment:
+    - MON_VERSION=0.0.1-1
+    - MON_PATH=/apps/grudkowm/dash-mon
+    - JAVA_OPTS='-Xmx2gi -Xms2g -XX:PermSize=1024m -XX:MaxPermSize=1024m'
+   # networks:
+   #   - monng
+    command: ["sh", "-c", "java -jar /apps/grudkowm/dash-mon/mon-ng-app-0.0.1.jar"]
+  monui: 
+    build: 
+      context: mon-ui/docker
+      dockerfile: mon-ui/Dockerfile
+    image: localhost:5000/options/mon-ng/mon-ui:latest
+    ports:
+    - "80:80"
+#    networks:
+#      - monng
+    depends_on:
+      - monmt 
+    command: ["/wait-for-it.sh", "monmt:8080", "--", "nginx"]
+
+#networks:
+#  monng:
+#    driver: bridge
+#    ipam:
+#      config:
+#      - subnet: 172.81.0.1/16
+

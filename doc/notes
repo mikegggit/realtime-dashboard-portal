@@ -1,0 +1,37 @@
+gradle createScmAdapter initScmAdapter checkCommitNeeded checkUpdateNeeded unSnapshotVersion confirmReleaseVersion checkSnapshotDependencies runBuildTasks preTagCommit  createReleaseTag updateVersion commitNewVersion --info
+
+
+...from the subproject
+gradle createScmAdapter initScmAdapter checkCommitNeeded checkUpdateNeeded unSnapshotVersion confirmReleaseVersion checkSnapshotDependencies runBuildTasks  --info
+- Updates gradle.properties to release (non-snapshot) version
+- Builds artifacts
+- Publishes to nexus 
+
+Manually rollback gradle.properties to SNAPSHOT version
+- Enables the next step to detect that we use SNAPSHOT versions during development
+
+
+gradle createScmAdapter initScmAdapter unSnapshotVersion preTagCommit  createReleaseTag updateVersion commitNewVersion --info
+- re-updates gradle.properties to release (non-snapshot) version
+- creates preTagCommit
+- Tags
+- Increments version 
+
+gradle createScmAdapter initScmAdapter preTagCommit  createReleaseTag updateVersion commitNewVersion --info
+	preTagCommit will only run if... 
+		gradle.properties has SNAPSHOT version before gradle is executed
+		gradle.properties was created
+		gradle.properties version changed
+
+
+
+preTagCommit
+gradle.properties is updated correctly, but...
+	commit message is wrong (references prior snapshot)
+
+	seems like project version isn't updated in memory
+
+
+gradle createScmAdapter initScmAdapter checkCommitNeeded checkUpdateNeeded unSnapshotVersion confirmReleaseVersion checkSnapshotDependencies runBuildTasks preTagCommit  createReleaseTag updateVersion commitNewVersion --info  -Prelease.useAutomaticVersion=true -Prelease.releaseVersion=1.0.7 -Prelease.newVersion=1.0.8-SNAPSHOT
+
+

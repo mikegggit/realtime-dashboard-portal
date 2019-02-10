@@ -1,0 +1,25 @@
+urls:
+  - soupbin400://GEMOPN:GEMOPN@192.168.52.216:12000
+  
+version: '@application.version@'
+
+thresholds:
+  nobo: 
+    - minutesPastOpen: 10
+      warningThreshold: 10
+      criticalThreshold: 100
+
+    - minutesPastOpen: 30
+      warningThreshold: 1
+      criticalThreshold: 10
+   
+  ise: 
+    - minutesPastOpen: 10
+      warningThreshold: 15
+      criticalThreshold: 150
+
+    - minutesPastOpen: 30
+      warningThreshold: 1
+      criticalThreshold: 10
+   
+    

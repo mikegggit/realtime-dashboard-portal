@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: monng
+    env: dev
+  name: monui-lbservice
+  namespace: default
+spec:
+  selector:
+    app: monng
+  ports:
+  - name: "80"
+    nodePort: 31268
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  type: LoadBalancer
+#---
+#apiVersion: v1
+#kind: Service
+#metadata: 
+#  name: monui-service
+#  labels: 
+#    name: monng
+#spec: 
+#  type: NodePort
+#  ports:
+#    # the port that this service should serve on
+#    - port: 80
+#  # label keys and values that must match in order to receive traffic for this service
+#  selector: 
+#    name: monui 
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.12.0 ()
+  creationTimestamp: null
+  labels:
+    app: monng
+    env: dev
+  name: monng
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: monng
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: monng
+    spec:
+      containers:
+      - name: monmt
+        image: localhost:5000/options/mon-ng:mon-mt-latest
+        env:
+        - name: MON_VERSION
+          value: 0.0.1
+        - name: MON_PATH
+          value: /apps/grudkowm/dash-mon
+        - name: JAVA_OPTS
+          value: '-Xmx2gi -Xms2g -XX:PermSize=1024m -XX:MaxPermSize=1024m'
+        ports:
+        - containerPort: 8080 
+        args: ["sh", "-c", "java -jar /apps/grudkowm/dash-mon/iris-app-0.0.1.jar"]
+      - name: monui
+        image: localhost:5000/options/mon-ng:mon-ui-latest
+        args: ["/wait-for-it.sh", "localhost:8080", "--", "nginx"]
+        ports:
+        - containerPort: 80 
+status: {}

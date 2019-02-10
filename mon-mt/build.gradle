@@ -1,0 +1,135 @@
+apply plugin: 'org.springframework.boot'
+apply plugin: "java"
+apply plugin: 'maven'
+apply plugin: 'eclipse-wtp'
+apply plugin: "nebula.rpm"
+apply plugin: 'net.researchgate.release'
+apply plugin: 'publishing'
+apply plugin: 'maven-publish'
+
+buildscript {
+  repositories {
+    jcenter()
+    maven {
+      url "https://plugins.gradle.org/m2/"
+    }
+    mavenCentral()
+    maven { url="https://maven-eu.nuxeo.org/nexus/content/repositories/public-releases/"}
+  }
+
+  dependencies {
+    classpath("org.springframework.boot:spring-boot-gradle-plugin:1.5.7.RELEASE")
+    classpath 'com.netflix.nebula:gradle-ospackage-plugin:4.5.1'
+    classpath 'net.researchgate:gradle-release:2.6.0'
+  }
+}
+
+repositories {
+    jcenter()
+    maven {
+      url "https://plugins.gradle.org/m2/"
+    }
+    mavenCentral()
+    maven { url="https://maven-eu.nuxeo.org/nexus/content/repositories/public-releases/"}
+}
+
+release {
+  failOnUnversionedFiles = false
+  failOnCommitNeeded = false
+  failOnUpdateNeeded = false
+  failOnPublishNeeded = false
+  tagTemplate='$name-$version'
+}
+
+publishing {
+  publications {
+    mavenRpm(MavenPublication) {
+      artifact createRpm
+      groupId="com.notatracer.monitoring"
+      artifactId="mon-ng-app"
+      version="$version"
+//      pom.withXml {
+//        asNode().appendNode('description', 'A demonstration of Maven POM customization')
+//      }
+    }
+  }
+  repositories {
+    maven {
+      credentials {
+        username "mike"
+        password "secret"
+      }
+      def sfx = "${version.endsWith('SNAPSHOT') ? 'my-new-snapshots' : 'my-new'}"
+      def u = "http://localhost:8081/nexus/content/repositories/${sfx}/"
+      url "${u}"
+    }
+  }
+}
+
+task createRpm(type: Rpm) {
+  packageName 'mon-ng-app'
+  version "$version"
+  release '1'
+  arch X86_64
+  os LINUX
+
+  from(jar.outputs.files) {
+    directory('/apps/grudkowm/dash-mon', 755, 'grudkowm', 'users')
+//    prefix('/apps/mikeg/dash-mon')
+    into '/apps/grudkowm/dash-mon'
+    user = 'grudkowm'
+    permissionGroup = 'users'
+  }
+  from('src/main/resources/') {
+    directory('/apps/grudkowm/dash-mon/config', 755, 'grudkowm', 'users')
+    include 'application-dev.yml'
+    rename 'application-dev.yml', 'application.yml'
+    into '/apps/grudkowm/dash-mon/config'
+  }
+}
+
+afterReleaseBuild.dependsOn publish
+
+// Run in-place...
+bootRun {
+  systemProperties System.properties
+//  systemProperty 'spring.profiles.active', 'dev'
+}
+
+//processResources {
+  //filter org.apache.tools.ant.filters.ReplaceTokens, tokens: [
+  //  "application.version": project.property("application.version")
+  //]
+//}
+
+dependencies {
+  compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.10.0'
+  compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.10.0'
+  //compile("log4j:log4j:1.2.17")
+  compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.6'
+
+  compile "commons-lang:commons-lang:2.3"
+  compile("org.webjars:sockjs-client:1.0.2")
+  // tag::jetty[]
+  compile("org.springframework.boot:spring-boot-gradle-plugin:1.5.7.RELEASE")
+  compile("org.springframework.boot:spring-boot-starter-web") {
+      exclude module: "spring-boot-starter-tomcat"
+  }
+  compile("org.springframework.boot:spring-boot-starter-jetty")
+  compile("org.springframework.boot:spring-boot-starter-jersey")
+  // end::jetty[]
+  // tag::actuator[]
+  compile("org.springframework.boot:spring-boot-starter-actuator")
+  // end::actuator[]
+  testCompile "org.hamcrest:hamcrest-core:1.1"
+  testCompile "junit:junit:4.9"
+}
+
+jar {
+  baseName = 'mon-ng-app'
+  version = "$version"
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+

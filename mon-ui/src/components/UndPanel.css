@@ -1,0 +1,46 @@
+.tablewrapper {
+  //background-color: green;
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 600px
+}
+
+.noRows {
+  font-size: 20px;
+  padding: 8px
+}
+
+.evenRow {
+  background-color: #F9F9F9
+}
+
+
+.oddRow {
+  background-color: #FFFFFF
+}
+
+.changed {
+  background-color: yellow
+}
+
+.critical {
+  background-color: #FF0000
+}
+
+.evenCritical {
+  background-color: #FF6666
+}
+
+
+.oddCritical {
+  background-color: #FF8888
+}
+
+.evenWarning {
+  background-color: #fffd78
+}
+
+.oddWarning {
+  background-color: #fffea8
+}
+

@@ -1,0 +1,77 @@
+# __BASE________________________________
+FROM registry.git.nasdaq.com/containers/base-images/java:8-jre-centos7 AS base
+
+
+ENV GRADLE_HOME /opt/gradle
+ENV GRADLE_VERSION 4.6
+ARG PROXY_HOST
+ARG PROXY_PORT
+ARG PROXY_NOPROXY="docker,localhost,127.0.0.1,localaddress,*localdomain.com,localdomain.com,*nasdaq.com,nasdaq.com,*nasdaqomx.com,nasdaqomx.com,*ften.com,ften.com,nexus.exchsys.nasdaq.com,159.79.212.72"
+
+RUN yum -y install wget \
+  && yum -y install unzip \
+  && yum clean all \
+  && rm -rf /var/lib/yum/yumdb \
+  && rm -rf /var/lib/yum/history \
+  && rpm --rebuilddb
+
+
+RUN wget --no-check-certificate "http://jcenter.bintray.com/org/springframework/boot/spring-boot-gradle-plugin/1.5.7.RELEASE/spring-boot-gradle-plugin-1.5.7.RELEASE.pom"
+
+RUN env
+ENV FOO BAR4
+#RUN ping -c 1 nexus.exchsys.nasdaq.com
+#RUN wget https://nexus.exchsys.nasdaq.com/
+RUN curl -k -L https://nexus.exchsys.nasdaq.com/ 
+####################################################
+# TODO: Re-enable certificate check
+####################################################
+RUN set -o errexit -o nounset \
+	&& echo "Downloading Gradle" \
+	&& wget --no-proxy -S -d --no-check-certificate --output-document=gradle.zip "https://nexus.exchsys.nasdaq.com/repository/gradle/gradle-${GRADLE_VERSION}-bin.zip" \
+	\
+	&& echo "Installing Gradle" \
+	&& unzip gradle.zip \
+	&& rm gradle.zip \
+	&& mv "gradle-${GRADLE_VERSION}" "${GRADLE_HOME}/" \
+	&& ln --symbolic "${GRADLE_HOME}/bin/gradle" /usr/bin/gradle
+
+
+WORKDIR /work
+
+COPY . .
+
+RUN gradle \
+  -Dhttp.proxyHost=${PROXY_HOST} \
+  -Dhttp.proxyPort=${PROXY_PORT} \
+  -Dhttp.nonProxyHosts=${PROXY_NOPROXY} \
+  --stacktrace \
+  clean \
+  bootRepackage \
+  createRpm
+
+
+ENTRYPOINT ["/usr/bin/gradle"]
+CMD ["--foreground"]
+
+# __BUILD_______________________________________
+FROM base AS build
+
+# __DEPENDENCIES________________________________
+FROM base AS dependencies
+
+RUN yum -y install unzip && \
+  yum -d 0 -e 0 -y install net-tools && \
+  yum -y install nc && \
+  yum -y install net-tools && \
+  yum -y install epel-release && \
+  yum -y install iproute && \
+  yum -y install wget && \
+  yum -y install which && \
+  yum -y install traceroute && yum clean all
+
+ENV FOO bar
+# __DEBUG________________________________
+FROM dependencies AS debug
+
+

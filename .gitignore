@@ -1,0 +1,17 @@
+partition*out
+**/*.LOG
+gradle
+gradlew*
+mon-ui/dist/
+.stage
+.settings
+.classpath
+build
+.idea
+.DS_Store
+.project
+.gradle
+*.rpm
+.gitlab-ci.yml
+Dockerfile.gradlebase
+mon-mt/docker/libs/

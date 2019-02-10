@@ -1,0 +1,167 @@
+buildscript {
+  repositories {
+    jcenter()
+    maven {
+      url "https://plugins.gradle.org/m2/"
+    }
+  }
+  dependencies {
+    classpath "com.moowork.gradle:gradle-node-plugin:1.2.0"
+    classpath 'com.netflix.nebula:gradle-ospackage-plugin:4.5.1'
+    classpath 'net.researchgate:gradle-release:2.6.0'
+    classpath("org.springframework.boot:spring-boot-gradle-plugin:1.5.7.RELEASE")
+  }
+}
+
+apply plugin: 'org.springframework.boot'
+apply plugin: 'com.moowork.node'
+apply plugin: 'maven'
+apply plugin: "nebula.rpm"
+apply plugin: 'net.researchgate.release'
+apply plugin: 'publishing'
+apply plugin: 'maven-publish'
+
+
+repositories {
+  jcenter()
+  mavenCentral()
+  maven { url "https://plugins.gradle.org/m2" }
+  mavenLocal()
+}
+
+release {
+  failOnUnversionedFiles = false
+  failOnCommitNeeded = false
+  failOnUpdateNeeded = false
+  failOnPublishNeeded = false
+  tagTemplate='$name-$version'
+}
+
+publishing {
+  publications {
+    mavenRpm(MavenPublication) {
+      artifact createRpm
+      groupId="com.notatracer.monitoring"
+      artifactId="mon-ui"
+      version="$version"
+    }
+  }
+  repositories {
+    mavenLocal()
+    maven {
+      credentials {
+        username "admin"
+        password "admin"
+      }
+      def sfx = "${version.endsWith('SNAPSHOT') ? 'snapshots' : 'releases'}"
+      def u = "http://localhost:8081/nexus/content/repositories/${sfx}/"
+      url "${u}"
+    }
+   
+  }
+}
+
+node {
+//  version = '6.2.2'
+//  npmVersion = '4.2.0'
+  distBaseUrl = 'https://nodejs.org/dist'
+  download = true
+}
+
+import com.moowork.gradle.node.task.NodeTask
+
+task webpackClean(type: Exec) {
+  group="monitoring"
+  description="Remove dist dir"
+  doFirst {
+    println("webpackClean")
+  }
+  workingDir "$projectDir"
+  commandLine 'rm', '-rf', 'dist'
+}
+
+task webpack_dev(type: NodeTask, dependsOn: ['npmInstall', 'webpackClean']) {
+  group="monitoring"
+  description="Build ui for dev env"
+  script = project.file('node_modules/.bin/webpack')
+  args = [ '--env.dev', '--config', './webpack.dev.js']
+}
+
+task webpack_dev_start (type: NodeTask, dependsOn: 'npmInstall') {
+  group="monitoring"
+  description="Run ui on dev webserver"
+  script = project.file('node_modules/.bin/webpack-dev-server')
+  args = [ '--env.dev', '--open', '--config', './webpack.dev.js']
+}
+
+task webpack_prd(type: NodeTask, dependsOn: ['npmInstall', 'webpackClean']) {
+  group="monitoring"
+  description="Build ui for prd env"
+  script = project.file('node_modules/.bin/webpack')
+  args = [ '--env.prd', '--config', './webpack.prod.js']
+}
+
+task createRpm(type: Rpm) {
+  group="monitoring"
+  description="Create ui package"
+  packageName 'mon-ui'
+  version "$version"
+  release '1'
+  arch X86_64
+  os LINUX
+
+
+  from('dist') {
+    directory('/apps/webserv/dash-mon', 755, 'datasvcs', 'users')
+    into '/apps/webserv/dash-mon'
+    user = 'datasvcs'
+    permissionGroup = 'users'
+  }
+}
+
+task setHttpProxyFromEnv << {
+    group="proxy"
+    description="Set proxy environment for gradle based on env of host env."
+    def map = ['HTTP_PROXY': 'http', 'HTTPS_PROXY': 'https']
+    for (e in System.getenv()) {
+        def key = e.key.toUpperCase()
+        if (key in map) {
+            def base = map[key]
+            def url = e.value.toURL()
+            println " - systemProp.${base}.proxy=${url.host}:${url.port}"
+            System.setProperty("${base}.proxyHost", url.host.toString())
+            System.setProperty("${base}.proxyPort", url.port.toString())
+        }
+
+        if (e.key.toUpperCase() == "NO_PROXY") {
+            println " - systemProp.no_proxy=${e.value}"
+            System.setProperty("http.nonProxyHosts", e.value)
+            System.setProperty("https.nonProxyHosts", e.value) 
+        } 
+    }
+}
+
+task setHttpProxyOld << {
+    println "setHttpProxyOld"
+    group="proxy"
+    description="Set proxy environment for gradle via a specific proxy."
+    def proxy_host = "localhost"
+    def proxy_port = "3128"
+    def no_proxy = "docker|localhost|127.0.0.1|localaddress|*localdomain.com|localdomain.com|*foo.com"
+
+    System.setProperty("http.proxyHost", proxy_host)
+    System.setProperty("http.proxyPort", proxy_port)
+    System.setProperty("http.nonProxyHosts", no_proxy)
+    System.setProperty("https.proxyHost", proxy_host)
+    System.setProperty("https.proxyPort", proxy_port)
+    System.setProperty("https.nonProxyHosts", no_proxy)
+
+    println " - http.proxyHost=${System.getProperty('http.proxyHost')}"
+    println " - http.proxyPort=${System.getProperty('http.proxyPort')}"
+    println " - http.nonProxyHosts=${System.getProperty('http.nonProxyHosts')}"
+    println " - https.proxyHost=${System.getProperty('https.proxyHost')}"
+    println " - https.proxyPort=${System.getProperty('https.proxyPort')}"
+    println " - https.nonProxyHosts=${System.getProperty('https.nonProxyHosts')}"
+}
+
+afterReleaseBuild.dependsOn publish

@@ -1,0 +1,11 @@
+class OpeningApi {
+
+  constructor() {
+
+  }
+
+  pollForData() {
+
+  }
+
+}
